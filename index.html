@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>세포소기관 대탐험 - 단백질 배송 어드벤처</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;800;900&display=swap');
+    * { font-family: 'Pretendard', sans-serif; }
+
+    /* Custom Animations & Glows */
+    @keyframes pulse-soft {
+      0%, 100% { transform: scale(1); opacity: 0.95; }
+      50% { transform: scale(1.02); opacity: 1; filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.6)); }
+    }
+    @keyframes float-cell {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(0.5deg); }
+    }
+    @keyframes dash {
+      to { stroke-dashoffset: -40; }
+    }
+    @keyframes ripple {
+      0% { r: 12; opacity: 0.9; stroke-width: 4; }
+      100% { r: 35; opacity: 0; stroke-width: 1; }
+    }
+    @keyframes glow-particle {
+      0%, 100% { filter: drop-shadow(0 0 6px #f59e0b); }
+      50% { filter: drop-shadow(0 0 16px #fbbf24); }
+    }
+
+    .animate-float { animation: float-cell 7s ease-in-out infinite; }
+    .animate-pulse-custom { animation: pulse-soft 3s ease-in-out infinite; }
+    .path-flow {
+      stroke-dasharray: 6, 6;
+      animation: dash 1.5s linear infinite;
+    }
+    .ripple-effect {
+      animation: ripple 1.6s ease-out infinite;
+    }
+    .glow-cargo {
+      animation: glow-particle 1.2s ease-in-out infinite;
+    }
+
+    /* Custom Glassmorphism */
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .glass-pill {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Modal Backdrop */
+    .modal-backdrop {
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(12px);
+    }
+
+    /* Organelle highlight on hover */
+    .organelle-interactive {
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .organelle-interactive:hover {
+      filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.85)) brightness(1.2);
+    }
+
+    /* Shimmer effect for buttons */
+    .btn-shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-shimmer::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        60deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+      );
+      transform: rotate(30deg);
+      transition: all 0.6s ease;
+    }
+    .btn-shimmer:hover::after {
+      left: 100%;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+
+  <!-- Ambient Glow Background -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/2 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-40 left-1/3 w-[32rem] h-[32rem] bg-emerald-600/15 rounded-full blur-3xl"></div>
+  </div>
+
+  <!-- Main Navigation Header -->
+  <header class="relative z-20 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 px-6 py-3.5">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <i data-lucide="microscope" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">고등학교 생명과학 I</span>
+            <span class="text-xs text-slate-400 font-medium">세포의 구조와 기능</span>
+          </div>
+          <h1 class="text-xl md:text-2xl font-black bg-gradient-to-r from-white via-cyan-200 to-indigo-300 bg-clip-text text-transparent tracking-tight">
+            세포소기관 대탐험 : 단백질 배송 어드벤처
+          </h1>
+        </div>
+      </div>
+
+      <!-- Header Action Controls -->
+      <div class="flex items-center gap-2.5">
+        <button id="btn-organelle-mode" onclick="setMode('explore')" class="px-3.5 py-2 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center gap-1.5 bg-indigo-600 text-white shadow-md shadow-indigo-500/25 hover:bg-indigo-500">
+          <i data-lucide="eye" class="w-4 h-4"></i>
+          <span>탐구 모드</span>
+        </button>
+        <button id="btn-sound-toggle" onclick="toggleSound()" class="p-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition" title="효과음 켜기/끄기">
+          <i id="sound-icon" data-lucide="volume-2" class="w-4 h-4"></i>
+        </button>
+        <button onclick="openGoldenBellModal()" class="btn-shimmer px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-2 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 text-slate-950 shadow-lg shadow-amber-500/30 hover:scale-105 active:scale-95">
+          <i data-lucide="trophy" class="w-4 h-4"></i>
+          <span>도전 골든벨 퀴즈!</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="relative z-10 max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left / Center: Interactive Cell Canvas (8 Cols) -->
+    <div class="lg:col-span-8 flex flex-col gap-4">
+      
+      <!-- Cell Diagram Frame -->
+      <div class="relative glass-card rounded-2xl p-4 md:p-6 shadow-2xl overflow-hidden border border-slate-700/60">
+        
+        <!-- Top Toolbar on Cell Canvas -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3 z-10 relative">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
+            <span class="text-xs md:text-sm font-semibold text-emerald-300">생체 세포 라이브 뷰</span>
+            <span class="text-xs text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">단백질 합성 및 분비 전용 모델</span>
+          </div>
+          
+          <!-- Speed / Reset Controls -->
+          <div class="flex items-center gap-1.5 text-xs">
+            <span class="text-slate-400 mr-1">배속:</span>
+            <button onclick="setAnimSpeed(1)" id="spd-1" class="px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-300 border border-indigo-500/50">1x</button>
+            <button onclick="setAnimSpeed(1.5)" id="spd-15" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">1.5x</button>
+            <button onclick="setAnimSpeed(2)" id="spd-2" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">2x</button>
+          </div>
+        </div>
+
+        <!-- SVG 3D-Isometric Cell Diagram Area -->
+        <div class="relative w-full aspect-[4/3] bg-gradient-to-b from-slate-900/90 via-slate-900/50 to-indigo-950/40 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden">
+          
+          <svg id="cell-svg" viewBox="0 0 840 600" class="w-full h-full select-none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- 3D Gradients -->
+              <!-- Cytoplasm / Cell Membrane -->
+              <radialGradient id="plasmaGrad" cx="48%" cy="46%" r="52%">
+                <stop offset="0%" stop-color="#1e1b4b" stop-opacity="0.8" />
+                <stop offset="65%" stop-color="#0f172a" stop-opacity="0.9" />
+                <stop offset="92%" stop-color="#0284c7" stop-opacity="0.6" />
+                <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.95" />
+              </radialGradient>
+
+              <!-- Nucleus 3D Spherical -->
+              <radialGradient id="nucleusGrad" cx="35%" cy="32%" r="65%">
+                <stop offset="0%" stop-color="#a855f7" />
+                <stop offset="50%" stop-color="#7e22ce" />
+                <stop offset="85%" stop-color="#4c1d95" />
+                <stop offset="100%" stop-color="#2e1065" />
+              </radialGradient>
+              <radialGradient id="nucleolusGrad" cx="40%" cy="35%" r="60%">
+                <stop offset="0%" stop-color="#f472b6" />
+                <stop offset="100%" stop-color="#9d174d" />
+              </radialGradient>
+
+              <!-- Endoplasmic Reticulum (ER) Tubes -->
+              <linearGradient id="erGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#06b6d4" />
+                <stop offset="50%" stop-color="#0891b2" />
+                <stop offset="100%" stop-color="#164e63" />
+              </linearGradient>
+
+              <!-- Golgi Apparatus Stacks -->
+              <linearGradient id="golgiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#f59e0b" />
+                <stop offset="50%" stop-color="#d97706" />
+                <stop offset="100%" stop-color="#78350f" />
+              </linearGradient>
+
+              <!-- Mitochondria Gradient -->
+              <radialGradient id="mitoGrad" cx="40%" cy="35%" r="60%">
+                <stop offset="0%" stop-color="#fb7185" />
+                <stop offset="70%" stop-color="#e11d48" />
+                <stop offset="100%" stop-color="#881337" />
+              </radialGradient>
+
+              <!-- Glow Filters -->
+              <filter id="glow-bright" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="glow-gold" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="8" result="blur" />
+                <feColorMatrix type="matrix" values="1 0 0 0 1  0 0.8 0 0 0.8  0 0 0.2 0 0  0 0 0 1 0" />
+                <feMerge>
+                  <feMergeNode />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <!-- Cytoplasm Matrix Grid & Particles -->
+            <g opacity="0.15">
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#60a5fa" stroke-width="0.75" />
+              </pattern>
+              <rect width="840" height="600" fill="url(#grid)" />
+            </g>
+
+            <!-- Cellular Membrane (Outer Boundary Layer) -->
+            <g id="cell-membrane-group" class="organelle-interactive" onclick="inspectOrganelle('membrane')">
+              <!-- Membrane Glow Edge -->
+              <path d="M 120,300 C 120,130 250,50 440,50 C 650,50 760,150 760,320 C 760,480 620,560 420,560 C 220,560 120,470 120,300 Z"
+                    fill="url(#plasmaGrad)" stroke="#38bdf8" stroke-width="8" stroke-dasharray="14 4" opacity="0.95" />
+              <!-- Inner phospholipid shadow -->
+              <path d="M 128,300 C 128,138 254,60 438,60 C 642,60 750,156 750,320 C 750,472 614,550 420,550 C 228,550 128,462 128,300 Z"
+                    fill="none" stroke="#0284c7" stroke-width="3" opacity="0.6" />
+            </g>
+
+            <!-- Extracellular Space Tag -->
+            <text x="730" y="580" fill="#94a3b8" font-size="11" font-weight="600">세포 밖 (세포외 기질)</text>
+            <text x="140" y="90" fill="#38bdf8" font-size="12" font-weight="700">세포막 (Cell Membrane)</text>
+
+            <!-- Supporting Reference Organelle: Mitochondria (ATP Provider) -->
+            <g id="organelle-mitochondria" class="organelle-interactive" onclick="inspectOrganelle('mitochondria')" transform="translate(180, 140) rotate(-25)">
+              <ellipse cx="60" cy="35" rx="55" ry="30" fill="url(#mitoGrad)" stroke="#fda4af" stroke-width="2" />
+              <!-- Cristae inner foldings -->
+              <path d="M 25,35 Q 35,20 45,35 T 65,35 T 85,35 T 100,35" fill="none" stroke="#ffe4e6" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M 35,45 Q 50,30 65,45 T 90,45" fill="none" stroke="#fecdd3" stroke-width="2" stroke-linecap="round" />
+              <text x="60" y="78" fill="#fda4af" font-size="11" font-weight="700" text-anchor="middle">미토콘드리아</text>
+            </g>
+
+            <!-- 1. Nucleus (핵 & 핵공) -->
+            <g id="organelle-nucleus" class="organelle-interactive" onclick="inspectOrganelle('nucleus')">
+              <!-- Nucleus Body (Left Central) -->
+              <circle cx="270" cy="360" r="110" fill="url(#nucleusGrad)" stroke="#c084fc" stroke-width="4" />
+              <!-- Nucleolus (인) -->
+              <circle cx="240" cy="335" r="38" fill="url(#nucleolusGrad)" opacity="0.9" />
+              <!-- Chromatin fibers representation -->
+              <path d="M 220,380 Q 250,420 290,390 T 320,340" fill="none" stroke="#e9d5ff" stroke-width="2.5" opacity="0.5" stroke-linecap="round" />
+              <path d="M 270,300 Q 300,320 310,370" fill="none" stroke="#d8b4fe" stroke-width="2" opacity="0.4" />
+              <!-- Nuclear Pores (핵공) -->
+              <circle cx="360" cy="310" r="6" fill="#fbbf24" stroke="#f59e0b" stroke-width="2" class="animate-pulse" />
+              <circle cx="375" cy="350" r="6" fill="#fbbf24" stroke="#f59e0b" stroke-width="2" />
+              <circle cx="365" cy="390" r="6" fill="#fbbf24" stroke="#f59e0b" stroke-width="2" />
+              <circle cx="330" cy="445" r="5" fill="#fde047" opacity="0.8" />
+              <circle cx="210" cy="460" r="5" fill="#fde047" opacity="0.8" />
+
+              <text x="240" y="340" fill="#ffffff" font-size="13" font-weight="800" text-anchor="middle">인 (Nucleolus)</text>
+              <text x="270" y="495" fill="#e9d5ff" font-size="14" font-weight="800" text-anchor="middle">핵 (Nucleus)</text>
+              <text x="385" y="312" fill="#fde047" font-size="10" font-weight="700">핵공 (Pore)</text>
+            </g>
+
+            <!-- 2. Rough Endoplasmic Reticulum (조면소포체) -->
+            <g id="organelle-er" class="organelle-interactive" onclick="inspectOrganelle('er')">
+              <!-- ER cisternae sheets wrapped around nucleus -->
+              <path d="M 370,290 C 410,270 440,300 420,340 C 400,380 430,410 410,440 C 390,470 370,450 360,420"
+                    fill="none" stroke="url(#erGrad)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+              <path d="M 390,260 C 440,240 470,270 450,320 C 435,360 460,400 440,430"
+                    fill="none" stroke="url(#erGrad)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity="0.85" />
+              
+              <!-- Ribosomes attached on Rough ER (조면소포체 위 리보솜 도트) -->
+              <g id="ribosomes-group" fill="#f43f5e" stroke="#ffe4e6" stroke-width="0.8">
+                <circle cx="380" cy="280" r="3.5" />
+                <circle cx="400" cy="270" r="3.5" />
+                <circle cx="420" cy="285" r="3.5" />
+                <circle cx="410" cy="320" r="3.5" />
+                <circle cx="430" cy="335" r="3.5" />
+                <circle cx="425" cy="370" r="3.5" />
+                <circle cx="415" cy="400" r="3.5" />
+                <circle cx="435" cy="415" r="3.5" />
+                <circle cx="390" cy="450" r="3.5" />
+              </g>
+
+              <!-- Free ribosomes in cytoplasm -->
+              <circle cx="210" cy="220" r="3" fill="#f43f5e" />
+              <circle cx="225" cy="228" r="3" fill="#f43f5e" />
+              <circle cx="310" cy="180" r="3" fill="#f43f5e" />
+              <circle cx="480" cy="210" r="3" fill="#f43f5e" />
+
+              <text x="430" y="240" fill="#67e8f9" font-size="13" font-weight="800">소포체 (ER)</text>
+              <text x="430" y="254" fill="#fda4af" font-size="10" font-weight="700">+ 리보솜 (Ribosome)</text>
+            </g>
+
+            <!-- 3. Golgi Apparatus (골지체) -->
+            <g id="organelle-golgi" class="organelle-interactive" onclick="inspectOrganelle('golgi')" transform="translate(530, 270)">
+              <!-- Cisternae curved pouches (cis to trans face) -->
+              <path d="M 0,0 C 25,25 25,75 0,105" fill="none" stroke="url(#golgiGrad)" stroke-width="16" stroke-linecap="round" />
+              <path d="M 18,-5 C 45,25 45,80 18,115" fill="none" stroke="url(#golgiGrad)" stroke-width="15" stroke-linecap="round" />
+              <path d="M 36,-10 C 65,20 65,85 36,125" fill="none" stroke="url(#golgiGrad)" stroke-width="14" stroke-linecap="round" />
+              <path d="M 54,-12 C 85,20 85,90 54,132" fill="none" stroke="url(#golgiGrad)" stroke-width="12" stroke-linecap="round" />
+
+              <!-- Budding cisternae vesicles -->
+              <circle cx="2" cy="-12" r="5" fill="#f59e0b" />
+              <circle cx="68" cy="10" r="6" fill="#fbbf24" />
+              <circle cx="70" cy="110" r="6" fill="#fbbf24" />
+
+              <text x="35" y="155" fill="#fcd34d" font-size="13" font-weight="800" text-anchor="middle">골지체 (Golgi)</text>
+            </g>
+
+            <!-- Guide Transport Path (Dashed Guide Lines) -->
+            <g id="delivery-guides" opacity="0.35">
+              <!-- Path 1: Nucleus to ER Ribosome -->
+              <path d="M 375,350 Q 395,340 410,335" fill="none" stroke="#fde047" stroke-width="2" class="path-flow" />
+              <!-- Path 2: ER to Golgi (Transport Vesicle) -->
+              <path d="M 445,340 Q 480,310 520,320" fill="none" stroke="#38bdf8" stroke-width="2" class="path-flow" />
+              <!-- Path 3: Golgi to Cell Membrane (Secretory Vesicle) -->
+              <path d="M 605,335 Q 670,340 735,330" fill="none" stroke="#34d399" stroke-width="2" class="path-flow" />
+            </g>
+
+            <!-- ANIMATED ACTORS (Dynamic layer controlled via JS) -->
+            <g id="animated-layer">
+              <!-- mRNA Strand (Starts inside nucleus, exits via pore) -->
+              <g id="actor-mrna" opacity="0" class="transition-opacity">
+                <path d="M -15,0 Q -8,-6 0,0 Q 8,6 15,0" fill="none" stroke="#facc15" stroke-width="3" stroke-linecap="round" />
+                <circle cx="-10" cy="-2" r="2" fill="#ef4444" />
+                <circle cx="-2" cy="2" r="2" fill="#3b82f6" />
+                <circle cx="6" cy="-2" r="2" fill="#10b981" />
+                <circle cx="12" cy="2" r="2" fill="#a855f7" />
+              </g>
+
+              <!-- Ribosome Synthesis Complex Indicator -->
+              <g id="actor-ribo-complex" opacity="0">
+                <circle cx="0" cy="0" r="9" fill="#f43f5e" stroke="#ffffff" stroke-width="2" />
+                <circle cx="0" cy="-8" r="6" fill="#fb7185" stroke="#ffffff" stroke-width="1.5" />
+                <path id="protein-chain" d="M 4,4 Q 10,12 18,15" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" />
+              </g>
+
+              <!-- Transport Vesicle (운반소낭 - ER -> Golgi) -->
+              <g id="actor-transport-vesicle" opacity="0">
+                <circle cx="0" cy="0" r="14" fill="#0284c7" stroke="#38bdf8" stroke-width="2.5" opacity="0.85" />
+                <!-- Folded protein inside -->
+                <path d="M -5,-3 C -2,-8 4,-4 5,0 C 6,4 0,7 -4,4 Z" fill="#38bdf8" class="glow-cargo" />
+              </g>
+
+              <!-- Secretory Vesicle (분비소낭 - Golgi -> Membrane) -->
+              <g id="actor-secretory-vesicle" opacity="0">
+                <circle cx="0" cy="0" r="15" fill="#059669" stroke="#34d399" stroke-width="2.5" opacity="0.9" />
+                <!-- Fully modified mature protein inside -->
+                <polygon points="0,-7 6,-2 4,6 -4,6 -6,-2" fill="#fde047" class="glow-cargo" />
+              </g>
+
+              <!-- Exocytosis Wave (세포외 배출 방출 효과) -->
+              <g id="actor-exocytosis" opacity="0">
+                <circle cx="735" cy="330" r="12" fill="none" stroke="#38bdf8" class="ripple-effect" />
+                <circle cx="735" cy="330" r="18" fill="none" stroke="#34d399" class="ripple-effect" style="animation-delay: 0.4s" />
+                <!-- Released proteins into blood/extracellular -->
+                <polygon points="755,320 761,324 758,331 752,331 749,324" fill="#fde047" />
+                <polygon points="768,340 774,344 771,351 765,351 762,344" fill="#fde047" />
+                <polygon points="785,325 791,329 788,336 782,336 779,329" fill="#fde047" />
+              </g>
+
+              <!-- Step Focus Spot Ring -->
+              <circle id="actor-focus-ring" cx="0" cy="0" r="32" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="6,4" opacity="0" class="transition-all duration-500" />
+            </g>
+
+          </svg>
+
+          <!-- Floating Info Badge on Diagram -->
+          <div id="canvas-status-badge" class="absolute bottom-3 left-4 glass-pill px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <span id="canvas-status-text" class="text-slate-300">기관을 클릭하거나 '배송 시작' 버튼을 눌러주세요.</span>
+          </div>
+
+          <!-- Step Progression Indicator Pills -->
+          <div class="absolute top-3 right-4 flex items-center gap-1.5 bg-slate-950/70 p-1.5 rounded-xl border border-slate-800">
+            <div id="step-dot-1" class="w-2.5 h-2.5 rounded-full bg-slate-700 transition-colors" title="1단계: 핵"></div>
+            <div id="step-dot-2" class="w-2.5 h-2.5 rounded-full bg-slate-700 transition-colors" title="2단계: 리보솜"></div>
+            <div id="step-dot-3" class="w-2.5 h-2.5 rounded-full bg-slate-700 transition-colors" title="3단계: 소포체"></div>
+            <div id="step-dot-4" class="w-2.5 h-2.5 rounded-full bg-slate-700 transition-colors" title="4단계: 운반소낭"></div>
+            <div id="step-dot-5" class="w-2.5 h-2.5 rounded-full bg-slate-700 transition-colors" title="5단계: 골지체"></div>
+            <div id="step-dot-6" class="w-2.5 h-2.5 rounded-full bg-slate-700 transition-colors" title="6단계: 분비소낭 & 세포막"></div>
+          </div>
+        </div>
+
+        <!-- Animation Playback Controls Bar -->
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-900/90 rounded-xl border border-slate-800">
+          <div class="flex items-center gap-2">
+            <button id="btn-play-animation" onclick="togglePlayAnimation()" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30 hover:brightness-110 active:scale-95 transition-all flex items-center gap-2">
+              <i id="play-icon" data-lucide="play" class="w-4 h-4 fill-white"></i>
+              <span id="play-btn-text">단백질 배송 시작</span>
+            </button>
+            <button onclick="resetAnimation()" class="px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5 border border-slate-700">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              <span>처음으로</span>
+            </button>
+          </div>
+
+          <!-- Step By Step Navigation (Teacher / Student presentation mode) -->
+          <div class="flex items-center gap-2">
+            <button onclick="prevStep()" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition disabled:opacity-40" id="btn-prev-step" disabled>
+              <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </button>
+            <span class="text-xs font-mono text-indigo-300 px-2 font-bold" id="current-step-label">대기 중</span>
+            <button onclick="nextStep()" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition">
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Organelle Cards Strip -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <button onclick="inspectOrganelle('nucleus')" class="text-left p-3 rounded-xl bg-purple-950/40 border border-purple-800/40 hover:border-purple-500 transition group hover:bg-purple-900/30">
+          <div class="flex items-center justify-between text-purple-400 mb-1">
+            <span class="text-xs font-bold">1. 핵 (Nucleus)</span>
+            <i data-lucide="dna" class="w-4 h-4 group-hover:scale-110 transition"></i>
+          </div>
+          <p class="text-[11px] text-slate-400 line-clamp-1">DNA 유전정보 보관 & mRNA 전사</p>
+        </button>
+
+        <button onclick="inspectOrganelle('ribosome')" class="text-left p-3 rounded-xl bg-rose-950/40 border border-rose-800/40 hover:border-rose-500 transition group hover:bg-rose-900/30">
+          <div class="flex items-center justify-between text-rose-400 mb-1">
+            <span class="text-xs font-bold">2. 리보솜 (Ribosome)</span>
+            <i data-lucide="box" class="w-4 h-4 group-hover:scale-110 transition"></i>
+          </div>
+          <p class="text-[11px] text-slate-400 line-clamp-1">아미노산 연결 단백질 번역 합성</p>
+        </button>
+
+        <button onclick="inspectOrganelle('er')" class="text-left p-3 rounded-xl bg-cyan-950/40 border border-cyan-800/40 hover:border-cyan-500 transition group hover:bg-cyan-900/30">
+          <div class="flex items-center justify-between text-cyan-400 mb-1">
+            <span class="text-xs font-bold">3. 소포체 (ER)</span>
+            <i data-lucide="truck" class="w-4 h-4 group-hover:scale-110 transition"></i>
+          </div>
+          <p class="text-[11px] text-slate-400 line-clamp-1">단백질 입체 접힘 & 소낭 운반</p>
+        </button>
+
+        <button onclick="inspectOrganelle('golgi')" class="text-left p-3 rounded-xl bg-amber-950/40 border border-amber-800/40 hover:border-amber-500 transition group hover:bg-amber-900/30">
+          <div class="flex items-center justify-between text-amber-400 mb-1">
+            <span class="text-xs font-bold">4. 골지체 (Golgi)</span>
+            <i data-lucide="package-check" class="w-4 h-4 group-hover:scale-110 transition"></i>
+          </div>
+          <p class="text-[11px] text-slate-400 line-clamp-1">당화 변형 & 최종 행선지 라벨링</p>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Right Side: Step Explanations & Biology Guide Panel (4 Cols) -->
+    <div class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- Dynamic Delivery Step Focus Card -->
+      <div class="glass-card rounded-2xl p-5 border border-slate-700/70 shadow-xl relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-28 h-28 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+          <div class="flex items-center gap-2">
+            <div id="step-badge-icon" class="w-7 h-7 rounded-lg bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+              <i data-lucide="navigation" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">단백질 경로 가이드</span>
+              <h2 id="delivery-step-title" class="text-base font-bold text-white">배송을 시작해보세요!</h2>
+            </div>
+          </div>
+          <span id="delivery-step-num" class="text-xs font-black px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-indigo-300">READY</span>
+        </div>
+
+        <!-- Real-time dynamic narrative -->
+        <div id="delivery-story" class="text-slate-300 text-sm leading-relaxed space-y-2.5">
+          <p>
+            생명체의 모든 활동을 지휘하는 <strong class="text-cyan-300">단백질(인슐린, 소화 효소 등)</strong>은 세포 안의 첨단 제조 공정을 거쳐 세포 밖으로 배송됩니다.
+          </p>
+          <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1.5">
+            <div class="font-semibold text-slate-200 flex items-center gap-1.5">
+              <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+              핵심 분비 경로 (반드시 암기!):
+            </div>
+            <div class="font-mono text-cyan-300 font-bold tracking-tight">
+              핵 (mRNA 전사) → 리보솜 (번역) → 소포체 (접힘·포장) → 운반소낭 → 골지체 (가공·분류) → 분비소낭 → 세포막 (외포작용 배출)
+            </div>
+          </div>
+        </div>
+
+        <!-- Key High School Exam Points -->
+        <div class="mt-4 pt-3 border-t border-slate-800/80">
+          <h4 class="text-xs font-bold text-amber-400 mb-2 flex items-center gap-1">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            수능 & 내신 빈출 핵심 포인트
+          </h4>
+          <ul id="delivery-exam-points" class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+            <li>단백질을 합성하는 기관: <span class="text-rose-400 font-bold">리보솜</span> (막 구조 없음)</li>
+            <li>소낭을 통해 물질을 주고받는 막진화 계통: <span class="text-indigo-300">소포체 ↔ 골지체 ↔ 세포막</span></li>
+            <li>단백질 외포작용(Exocytosis)에는 <span class="text-emerald-400 font-bold">ATP 에너지</span>가 소모됨</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Organelle Deep Dive Inspector Card -->
+      <div id="inspector-card" class="glass-card rounded-2xl p-5 border border-slate-700/70 shadow-xl flex-1">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+          <div class="flex items-center gap-2">
+            <div id="inspect-icon-wrap" class="w-7 h-7 rounded-lg bg-cyan-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+              <i data-lucide="info" class="w-4 h-4"></i>
+            </div>
+            <h3 id="inspect-title" class="text-base font-bold text-white">소기관 상세 백과</h3>
+          </div>
+          <span id="inspect-badge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">클릭 탐색</span>
+        </div>
+
+        <div id="inspect-content" class="text-xs text-slate-300 space-y-3 leading-relaxed">
+          <p>
+            왼쪽의 <strong>세포 일러스트</strong>에서 관심 있는 세포소기관(핵, 리보솜, 소포체, 골지체, 세포막, 미토콘드리아)을 클릭하면 교과서 핵심 개념과 기능이 여기에 표시됩니다.
+          </p>
+          <div class="p-3 bg-indigo-950/30 rounded-xl border border-indigo-900/40 text-[11px] text-indigo-200">
+            💡 <strong>교사용 Tip:</strong> 프로젝터나 전자칠판에서 전체화면으로 띄우고 학생들에게 각 단계를 설명할 때 단계 이동 버튼(◀, ▶)을 사용하면 효과적입니다.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ==================== GOLDEN BELL QUIZ MODAL ==================== -->
+  <div id="golden-bell-modal" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    
+    <div class="glass-card w-full max-w-2xl rounded-3xl border border-amber-500/40 shadow-2xl p-6 md:p-8 relative overflow-hidden transform transition-all scale-95 opacity-0 duration-300" id="quiz-dialog-box">
+      
+      <!-- Top Glow Accent -->
+      <div class="absolute -top-16 left-1/2 -translate-x-1/2 w-64 h-24 bg-amber-500/20 blur-3xl rounded-full pointer-events-none"></div>
+
+      <!-- Quiz Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/30 font-black">
+            <i data-lucide="bell-ring" class="w-7 h-7"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">생명과학 교실 이벤트</span>
+              <span id="quiz-question-counter" class="text-xs font-mono text-slate-400">문제 1 / 3</span>
+            </div>
+            <h2 class="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+              도전 골든벨! <span class="text-amber-400">세포 퀴즈 쇼</span>
+            </h2>
+          </div>
+        </div>
+
+        <!-- 30-Second Countdown Timer Ring -->
+        <div class="flex items-center gap-3">
+          <div class="relative w-14 h-14 flex items-center justify-center">
+            <svg class="w-full h-full transform -rotate-90">
+              <circle cx="28" cy="28" r="23" stroke="#1e293b" stroke-width="4" fill="none" />
+              <circle id="quiz-timer-bar" cx="28" cy="28" r="23" stroke="#f59e0b" stroke-width="4" stroke-dasharray="144.5" stroke-dashoffset="0" stroke-linecap="round" fill="none" class="transition-all duration-1000 ease-linear" />
+            </svg>
+            <span id="quiz-timer-text" class="absolute font-black font-mono text-base text-amber-400">30</span>
+          </div>
+
+          <button onclick="closeGoldenBellModal()" class="w-9 h-9 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition border border-slate-700">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Question & Classroom Instruction -->
+      <div id="quiz-main-body">
+        
+        <div class="mb-5">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 text-xs font-bold mb-2">
+            <i data-lucide="hand" class="w-3.5 h-3.5 text-yellow-400"></i>
+            <span>선생님 신호에 맞춰 자리에서 손을 들어 번호를 외쳐주세요!</span>
+          </div>
+          <h3 id="quiz-question-title" class="text-lg md:text-xl font-bold text-white leading-snug">
+            문제를 불러오는 중...
+          </h3>
+        </div>
+
+        <!-- 4 Multiple Choice Options Grid -->
+        <div id="quiz-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          <!-- Populated by JavaScript -->
+        </div>
+
+        <!-- Result / Feedback Banner (Hidden by default) -->
+        <div id="quiz-feedback-banner" class="hidden p-4 rounded-2xl mb-4 border transition-all animate-bounce">
+          <div class="flex items-start gap-3">
+            <div id="quiz-feedback-icon" class="w-8 h-8 rounded-xl flex items-center justify-center font-black"></div>
+            <div>
+              <h4 id="quiz-feedback-title" class="font-bold text-sm"></h4>
+              <p id="quiz-feedback-detail" class="text-xs mt-0.5"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Control Buttons -->
+        <div class="flex items-center justify-between pt-2">
+          <div class="text-xs text-slate-400 flex items-center gap-2">
+            <span>누적 점수:</span>
+            <span id="quiz-score-display" class="font-bold text-amber-400 text-sm">0점</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="btn-quiz-retry" onclick="retryCurrentQuestion()" class="hidden px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span>다시 시도하기</span>
+            </button>
+            <button id="btn-quiz-next" onclick="nextQuestion()" class="hidden px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-lg shadow-indigo-600/30 flex items-center gap-1.5">
+              <span>다음 문제</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quiz Final Completion View (When all 3 done) -->
+      <div id="quiz-completed-view" class="hidden text-center py-6">
+        <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-amber-500/40">
+          <i data-lucide="award" class="w-10 h-10"></i>
+        </div>
+        <h3 class="text-2xl font-black text-white mb-2">골든벨 퀴즈 정복 완료! 🎉</h3>
+        <p class="text-sm text-slate-300 max-w-md mx-auto mb-6">
+          오늘 배운 단백질의 합성 및 분비 경로를 완벽히 이해했습니다!<br>
+          <span class="text-amber-400 font-bold" id="final-score-text">최종 점수: 3 / 3 정답</span>
+        </p>
+
+        <div class="flex justify-center gap-3">
+          <button onclick="restartQuiz()" class="px-5 py-2.5 rounded-xl text-sm font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition flex items-center gap-2 shadow-lg shadow-amber-500/30">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            <span>골든벨 다시 도전</span>
+          </button>
+          <button onclick="closeGoldenBellModal()" class="px-5 py-2.5 rounded-xl text-sm font-bold bg-slate-800 hover:bg-slate-700 text-white transition border border-slate-700">
+            <span>세포 복습하러 가기</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Audio Synthesizer (Web Audio API - No external mp3 dependency required) -->
+  <script>
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      }
+      playTone(freq, type = 'sine', duration = 0.2, gainVal = 0.15) {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          if (this.ctx.state === 'suspended') this.ctx.resume();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) { /* Audio fallback */ }
+      }
+      // Pleasant chime for correct answer
+      playSuccess() {
+        if (!this.enabled) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 'triangle', 0.35, 0.2), i * 90);
+        });
+      }
+      // Soft gentle buzzy boop for wrong answer (friendly retry)
+      playFailure() {
+        if (!this.enabled) return;
+        this.playTone(280, 'sawtooth', 0.2, 0.12);
+        setTimeout(() => this.playTone(210, 'sawtooth', 0.35, 0.15), 120);
+      }
+      // Step transition bubble pop
+      playStep() {
+        if (!this.enabled) return;
+        this.playTone(440, 'sine', 0.1, 0.08);
+      }
+      // Secretion exocytosis whoosh
+      playExo() {
+        if (!this.enabled) return;
+        this.playTone(880, 'sine', 0.4, 0.15);
+        setTimeout(() => this.playTone(1174, 'triangle', 0.5, 0.18), 120);
+      }
+    }
+    const sound = new SoundFX();
+
+    function toggleSound() {
+      sound.enabled = !sound.enabled;
+      const icon = document.getElementById('sound-icon');
+      if (sound.enabled) {
+        icon.setAttribute('data-lucide', 'volume-2');
+      } else {
+        icon.setAttribute('data-lucide', 'volume-x');
+      }
+      lucide.createIcons();
+    }
+  </script>
+
+  <!-- Main Biology Interactive Logic & Quiz Engine -->
+  <script>
+    // Organelle Knowledge Base (Strictly aligned with Korean High School Life Science I Curriculum)
+    const organelleData = {
+      nucleus: {
+        title: "핵 (Nucleus)",
+        badge: "유전 정보의 사령탑",
+        color: "text-purple-400",
+        border: "border-purple-500",
+        bg: "bg-purple-950/40",
+        desc: `
+          <p><strong>생명 활동의 조절 중심:</strong> 2중막 구조인 <em>핵막</em>으로 둘러싸여 있으며, 내부에 DNA와 단백질로 이루어진 염색질이 들어있습니다.</p>
+          <ul class="list-disc list-inside mt-2 space-y-1 text-slate-300">
+            <li><strong>인(Nucleolus):</strong> 리보솜의 구성 요소인 rRNA를 합성하고 리보솜 소단위체를 조립합니다.</li>
+            <li><strong>핵공(Nuclear Pore):</strong> 핵막에 뚫려 있는 구멍으로 mRNA, 효소, 단백질 등이 핵과 세포질 사이를 출입합니다.</li>
+            <li><strong>단백질 배송 첫 단추:</strong> DNA의 암호로부터 전사된 <strong>mRNA</strong>가 핵공을 통해 세포질의 리보솜으로 빠져나갑니다.</li>
+          </ul>
+        `
+      },
+      ribosome: {
+        title: "리보솜 (Ribosome)",
+        badge: "단백질 합성 공장",
+        color: "text-rose-400",
+        border: "border-rose-500",
+        bg: "bg-rose-950/40",
+        desc: `
+          <p><strong>단백질 번역 합성:</strong> 막 구조가 없는 알갱이 모양의 소기관(대단위체 + 소단위체)으로, rRNA와 단백질로 구성됩니다.</p>
+          <ul class="list-disc list-inside mt-2 space-y-1 text-slate-300">
+            <li><strong>유전 암호 해독:</strong> mRNA의 코돈 정보에 따라 tRNA가 운반해온 아미노산들을 <strong>펩타이드 결합</strong>으로 연결합니다.</li>
+            <li><strong>부착 리보솜 vs 자유 리보솜:</strong>
+              <br>- 조면소포체에 붙어 있는 리보솜: <em>세포 밖으로 분비될 단백질, 막단백질</em> 합성
+              <br>- 세포질에 자유롭게 떠 있는 리보솜: 세포 내부에서 쓰일 효소 및 단백질 합성
+            </li>
+          </ul>
+        `
+      },
+      er: {
+        title: "소포체 (Endoplasmic Reticulum)",
+        badge: "단백질 가공 & 운반 통로",
+        color: "text-cyan-400",
+        border: "border-cyan-500",
+        bg: "bg-cyan-950/40",
+        desc: `
+          <p><strong>세포 내 그물망 운반계:</strong> 단일막 구조로 핵막 외막과 직접 연결되어 세포 전체로 뻗어있는 망상 기관입니다.</p>
+          <ul class="list-disc list-inside mt-2 space-y-1 text-slate-300">
+            <li><strong>조면소포체(거친면 소포체):</strong> 표면에 리보솜이 부착되어 있어 거칠게 보이며, 리보솜에서 만든 폴리펩타이드를 소포체 내강으로 받아들여 <em>3차원 입체 구조로 접힘(Folding)</em>을 돕습니다.</li>
+            <li><strong>운반소낭 형성:</strong> 접힘이 끝난 단백질을 막으로 싸서 <strong>운반소낭(Transport Vesicle)</strong> 형태로 골지체로 보냅니다.</li>
+            <li><strong>활면소포체(매끈한면):</strong> 지질 합성, 독성 물질 해독, 칼슘 저장 등을 담당합니다.</li>
+          </ul>
+        `
+      },
+      golgi: {
+        title: "골지체 (Golgi Apparatus)",
+        badge: "단백질의 최종 포장 & 택배 터미널",
+        color: "text-amber-400",
+        border: "border-amber-500",
+        bg: "bg-amber-950/40",
+        desc: `
+          <p><strong>물질의 가공·분류·포장:</strong> 납작한 시스터나 주머니들이 겹겹이 포개진 단일막 구조입니다.</p>
+          <ul class="list-disc list-inside mt-2 space-y-1 text-slate-300">
+            <li><strong>단백질의 성숙 및 변형:</strong> 소포체에서 온 단백질에 탄수화물(당화)을 붙이는 등 최종 가공을 수행합니다.</li>
+            <li><strong>행선지 표지표(Labeling):</strong> 단백질이 어디로 가야 하는지(세포막, 리소좀, 외부 분비 등) 목적지 표식을 붙여 분류합니다.</li>
+            <li><strong>분비소낭 방출:</strong> 골지체 끝단이 떨어져 나와 <strong>분비소낭(Secretory Vesicle)</strong>을 만들어 세포막으로 배송합니다.</li>
+          </ul>
+        `
+      },
+      membrane: {
+        title: "세포막 (Cell Membrane)",
+        badge: "물질 출입 조절 경계",
+        color: "text-sky-400",
+        border: "border-sky-500",
+        bg: "bg-sky-950/40",
+        desc: `
+          <p><strong>인지질 2중층과 단백질:</strong> 유동 모자이크 모델로 세포 내부를 외부와 격리하고 선택적 투과성을 갖습니다.</p>
+          <ul class="list-disc list-inside mt-2 space-y-1 text-slate-300">
+            <li><strong>외포작용(Exocytosis):</strong> 골지체에서 온 분비소낭이 세포막과 융합(Fusion)하면서 내용물(인슐린, 항체 등)을 세포 밖으로 완전히 배출합니다.</li>
+            <li><strong>에너지(ATP) 소모:</strong> 소낭의 이동과 세포막 융합 과정에는 세포의 ATP 에너지가 필요합니다.</li>
+          </ul>
+        `
+      },
+      mitochondria: {
+        title: "미토콘드리아 (Mitochondria)",
+        badge: "세포 호흡과 ATP 생산 발전소",
+        color: "text-rose-400",
+        border: "border-rose-500",
+        bg: "bg-rose-950/40",
+        desc: `
+          <p><strong>에너지 생산 중심:</strong> 2중막 구조이며, 유기물을 산화시켜 생명활동에 쓰이는 <strong>ATP</strong>를 대량 생산하는 세포 호흡의 장소입니다.</p>
+          <ul class="list-disc list-inside mt-2 space-y-1 text-slate-300">
+            <li><strong>단백질 합성에 필수:</strong> 리보솜의 번역, 소포체와 골지체 사이 소낭의 이동, 세포막 외포작용 모두 미토콘드리아가 만든 ATP 에너지가 있어야 일어납니다!</li>
+            <li>자체 DNA와 리보솜을 가지고 있어 독자적으로 증식할 수 있습니다.</li>
+          </ul>
+        `
+      }
+    };
+
+    function inspectOrganelle(key) {
+      const info = organelleData[key];
+      if (!info) return;
+
+      sound.playStep();
+      const card = document.getElementById('inspector-card');
+      const title = document.getElementById('inspect-title');
+      const badge = document.getElementById('inspect-badge');
+      const content = document.getElementById('inspect-content');
+
+      title.innerHTML = `<span class="${info.color}">${info.title}</span>`;
+      badge.textContent = info.badge;
+      badge.className = `text-[10px] font-semibold px-2 py-0.5 rounded ${info.bg} ${info.color} border ${info.border}`;
+      content.innerHTML = info.desc;
+
+      // Temporary focal ring highlight on corresponding coordinate
+      const coords = {
+        nucleus: { cx: 270, cy: 360, r: 120 },
+        ribosome: { cx: 410, cy: 320, r: 40 },
+        er: { cx: 410, cy: 350, r: 70 },
+        golgi: { cx: 560, cy: 330, r: 65 },
+        membrane: { cx: 440, cy: 300, r: 260 },
+        mitochondria: { cx: 240, cy: 175, r: 60 }
+      };
+      if (coords[key]) {
+        highlightOrganelleSpot(coords[key].cx, coords[key].cy, coords[key].r);
+      }
+    }
+
+    function highlightOrganelleSpot(x, y, r = 40) {
+      const ring = document.getElementById('actor-focus-ring');
+      ring.setAttribute('cx', x);
+      ring.setAttribute('cy', y);
+      ring.setAttribute('r', r);
+      ring.setAttribute('opacity', '0.9');
+      setTimeout(() => {
+        ring.setAttribute('opacity', '0');
+      }, 1500);
+    }
+
+    // ==========================================
+    // 6-STEP DELIVERY ANIMATION SEQUENCE ENGINE
+    // ==========================================
+    let currentStep = 0; // 0: Idle, 1..6: Active steps
+    let isPlaying = false;
+    let animTimer = null;
+    let animSpeed = 1.0;
+
+    const deliverySteps = [
+      {
+        step: 1,
+        title: "1단계: 핵에서 mRNA 전사 및 핵공 탈출",
+        badge: "STEP 1 · 핵",
+        desc: `
+          <p>세포핵 내부의 DNA 유전 암호로부터 <strong>mRNA(전령 RNA)</strong>가 복사(전사)됩니다.</p>
+          <p class="mt-1">합성된 mRNA는 <strong>핵공(Nuclear Pore)</strong>을 통해 핵막을 빠져나와 단백질 조립 공장인 리보솜을 향해 이동합니다.</p>
+        `,
+        setup: () => {
+          showActor('actor-mrna', true);
+          moveActor('actor-mrna', 270, 360); // Inside nucleus
+          setTimeout(() => {
+            moveActorWithTransition('actor-mrna', 375, 350, 1000 / animSpeed); // Move through pore
+          }, 100);
+          highlightOrganelleSpot(270, 360, 100);
+        }
+      },
+      {
+        step: 2,
+        title: "2단계: 조면소포체 부착 리보솜에서 단백질 번역",
+        badge: "STEP 2 · 리보솜",
+        desc: `
+          <p>핵에서 나온 mRNA가 조면소포체 표면에 부착된 <strong>리보솜</strong>과 결합합니다.</p>
+          <p class="mt-1">리보솜은 유전 암호를 읽어 아미노산들을 펩타이드 결합으로 차례차례 연결하여 <strong>폴리펩타이드 사슬</strong>을 합성합니다.</p>
+        `,
+        setup: () => {
+          moveActorWithTransition('actor-mrna', 410, 335, 700 / animSpeed);
+          showActor('actor-ribo-complex', true);
+          moveActor('actor-ribo-complex', 410, 335);
+          highlightOrganelleSpot(410, 335, 45);
+        }
+      },
+      {
+        step: 3,
+        title: "3단계: 소포체 내강에서 단백질 3차원 입체 접힘",
+        badge: "STEP 3 · 소포체",
+        desc: `
+          <p>리보솜에서 합성된 단백질 사슬이 <strong>소포체 내강(ER lumen)</strong> 안으로 주입됩니다.</p>
+          <p class="mt-1">소포체 안에서 단백질은 고유한 <strong>3차원 입체 구조(Folding)</strong>로 올바르게 접히며 초기 변형을 거칩니다.</p>
+        `,
+        setup: () => {
+          showActor('actor-mrna', false);
+          showActor('actor-ribo-complex', false);
+          showActor('actor-transport-vesicle', true);
+          moveActor('actor-transport-vesicle', 425, 360);
+          highlightOrganelleSpot(420, 360, 55);
+        }
+      },
+      {
+        step: 4,
+        title: "4단계: 운반소낭(Transport Vesicle)에 실려 골지체로 이동",
+        badge: "STEP 4 · 운반소낭",
+        desc: `
+          <p>접힘이 완료된 단백질을 소포체 막의 일부가 감싸 떨어져 나오면서 <strong>운반소낭</strong>이 형성됩니다.</p>
+          <p class="mt-1">운반소낭은 세포 골격을 따라 다음 가공 장소인 <strong>골지체의 볼록한 면(cis 면)</strong>으로 이동해 융합합니다.</p>
+        `,
+        setup: () => {
+          showActor('actor-transport-vesicle', true);
+          moveActor('actor-transport-vesicle', 430, 360);
+          setTimeout(() => {
+            moveActorWithTransition('actor-transport-vesicle', 530, 325, 1200 / animSpeed);
+          }, 100);
+          highlightOrganelleSpot(480, 340, 60);
+        }
+      },
+      {
+        step: 5,
+        title: "5단계: 골지체에서 최종 가공·수식 및 행선지 분류",
+        badge: "STEP 5 · 골지체",
+        desc: `
+          <p>골지체 시스터나를 차례로 통과하면서 당류가 첨가되는 등 <strong>최종 가공(당화 등)</strong>이 일어납니다.</p>
+          <p class="mt-1">세포 밖으로 분비될 단백질로 최종 분류된 뒤, 골지체 끝부분에서 <strong>분비소낭(Secretory Vesicle)</strong>으로 묶여 떨어져 나옵니다.</p>
+        `,
+        setup: () => {
+          showActor('actor-transport-vesicle', false);
+          showActor('actor-secretory-vesicle', true);
+          moveActor('actor-secretory-vesicle', 560, 320);
+          setTimeout(() => {
+            moveActorWithTransition('actor-secretory-vesicle', 595, 335, 800 / animSpeed);
+          }, 100);
+          highlightOrganelleSpot(560, 320, 65);
+        }
+      },
+      {
+        step: 6,
+        title: "6단계: 분비소낭의 세포막 융합 및 외포작용(Exocytosis) 분비",
+        badge: "STEP 6 · 세포막 방출",
+        desc: `
+          <p>분비소낭이 세포막에 도달하여 <strong>세포막과 융합</strong>합니다.</p>
+          <p class="mt-1">소낭 내부의 성숙한 단백질(예: 인슐린 호르몬, 소화 효소)이 <strong>세포 외포작용</strong>을 통해 체액이나 혈액으로 완전히 분비됩니다!</p>
+        `,
+        setup: () => {
+          showActor('actor-secretory-vesicle', true);
+          moveActor('actor-secretory-vesicle', 595, 335);
+          setTimeout(() => {
+            moveActorWithTransition('actor-secretory-vesicle', 720, 330, 1100 / animSpeed);
+            setTimeout(() => {
+              showActor('actor-secretory-vesicle', false);
+              triggerExocytosisBurst();
+            }, 1150 / animSpeed);
+          }, 100);
+          highlightOrganelleSpot(735, 330, 70);
+        }
+      }
+    ];
+
+    function showActor(id, visible) {
+      const el = document.getElementById(id);
+      if (el) el.setAttribute('opacity', visible ? '1' : '0');
+    }
+
+    function moveActor(id, x, y) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.style.transition = 'none';
+        el.setAttribute('transform', `translate(${x}, ${y})`);
+      }
+    }
+
+    function moveActorWithTransition(id, x, y, durationMs) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.style.transition = `transform ${durationMs}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+        el.setAttribute('transform', `translate(${x}, ${y})`);
+      }
+    }
+
+    function triggerExocytosisBurst() {
+      const exo = document.getElementById('actor-exocytosis');
+      exo.setAttribute('opacity', '1');
+      sound.playExo();
+      confetti({
+        particleCount: 45,
+        spread: 60,
+        origin: { x: 0.72, y: 0.55 },
+        colors: ['#38bdf8', '#34d399', '#fde047', '#a855f7']
+      });
+      setTimeout(() => {
+        exo.setAttribute('opacity', '0');
+      }, 3000);
+    }
+
+    function updateStepUI(stepIndex) {
+      const data = deliverySteps[stepIndex - 1];
+      if (!data) return;
+
+      document.getElementById('delivery-step-num').textContent = data.badge;
+      document.getElementById('delivery-step-title').textContent = data.title;
+      document.getElementById('delivery-story').innerHTML = data.desc;
+      document.getElementById('canvas-status-text').innerHTML = `<strong>진행 중:</strong> ${data.title}`;
+      document.getElementById('current-step-label').textContent = `${stepIndex} / 6 단계`;
+
+      // Update dot indicators
+      for (let i = 1; i <= 6; i++) {
+        const dot = document.getElementById(`step-dot-${i}`);
+        if (i < stepIndex) {
+          dot.className = "w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/50 transition-colors";
+        } else if (i === stepIndex) {
+          dot.className = "w-2.5 h-2.5 rounded-full bg-cyan-400 ring-4 ring-cyan-500/30 transition-colors animate-pulse";
+        } else {
+          dot.className = "w-2.5 h-2.5 rounded-full bg-slate-700 transition-colors";
+        }
+      }
+
+      // Prev/Next buttons enable state
+      document.getElementById('btn-prev-step').disabled = (stepIndex <= 1);
+      
+      // Execute actor animation for this step
+      sound.playStep();
+      data.setup();
+    }
+
+    function goToStep(step) {
+      if (step < 1) step = 1;
+      if (step > 6) step = 6;
+      currentStep = step;
+      updateStepUI(currentStep);
+    }
+
+    function nextStep() {
+      if (currentStep < 6) {
+        goToStep(currentStep + 1);
+      } else {
+        goToStep(1); // loop back
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        goToStep(currentStep - 1);
+      }
+    }
+
+    function togglePlayAnimation() {
+      if (isPlaying) {
+        pauseAnimation();
+      } else {
+        startAnimation();
+      }
+    }
+
+    function startAnimation() {
+      isPlaying = true;
+      document.getElementById('play-btn-text').textContent = "일시 정지";
+      document.getElementById('play-icon').setAttribute('data-lucide', 'pause');
+      lucide.createIcons();
+
+      if (currentStep === 0 || currentStep >= 6) {
+        currentStep = 1;
+      }
+      updateStepUI(currentStep);
+
+      const stepDelay = 3200 / animSpeed;
+
+      clearInterval(animTimer);
+      animTimer = setInterval(() => {
+        if (currentStep < 6) {
+          currentStep++;
+          updateStepUI(currentStep);
+        } else {
+          pauseAnimation();
+          document.getElementById('canvas-status-text').innerHTML = `🎉 <strong>단백질 분비 완료!</strong> 외포작용으로 배출되었습니다.`;
+        }
+      }, stepDelay);
+    }
+
+    function pauseAnimation() {
+      isPlaying = false;
+      clearInterval(animTimer);
+      document.getElementById('play-btn-text').textContent = "이어하기";
+      document.getElementById('play-icon').setAttribute('data-lucide', 'play');
+      lucide.createIcons();
+    }
+
+    function resetAnimation() {
+      pauseAnimation();
+      currentStep = 0;
+      document.getElementById('play-btn-text').textContent = "단백질 배송 시작";
+      document.getElementById('current-step-label').textContent = "대기 중";
+      document.getElementById('delivery-step-num').textContent = "READY";
+      document.getElementById('delivery-step-title').textContent = "단백질 배송 어드벤처 준비 완료";
+      document.getElementById('delivery-story').innerHTML = `
+        <p>시작 버튼을 누르면 <strong class="text-cyan-300">핵 → 리보솜 → 소포체 → 골지체 → 세포막</strong>으로 이어지는 연속 애니메이션이 재생됩니다.</p>
+      `;
+      document.getElementById('canvas-status-text').textContent = "기관을 클릭하거나 '배송 시작' 버튼을 눌러주세요.";
+
+      // Hide all dynamic actors
+      showActor('actor-mrna', false);
+      showActor('actor-ribo-complex', false);
+      showActor('actor-transport-vesicle', false);
+      showActor('actor-secretory-vesicle', false);
+      showActor('actor-exocytosis', false);
+      document.getElementById('actor-focus-ring').setAttribute('opacity', '0');
+
+      for (let i = 1; i <= 6; i++) {
+        document.getElementById(`step-dot-${i}`).className = "w-2.5 h-2.5 rounded-full bg-slate-700 transition-colors";
+      }
+      document.getElementById('btn-prev-step').disabled = true;
+    }
+
+    function setAnimSpeed(spd) {
+      animSpeed = spd;
+      ['spd-1', 'spd-15', 'spd-2'].forEach(id => {
+        const btn = document.getElementById(id);
+        btn.className = "px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700";
+      });
+      if (spd === 1) document.getElementById('spd-1').className = "px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-300 border border-indigo-500/50";
+      if (spd === 1.5) document.getElementById('spd-15').className = "px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-300 border border-indigo-500/50";
+      if (spd === 2) document.getElementById('spd-2').className = "px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-300 border border-indigo-500/50";
+
+      if (isPlaying) {
+        startAnimation(); // restart interval with new speed
+      }
+    }
+
+
+    // ==========================================
+    // GOLDEN BELL QUIZ SHOW ENGINE (30s Timer, Retry, Celebrations)
+    // ==========================================
+    const quizQuestions = [
+      {
+        question: "다음 중 단백질이 합성되어 세포 밖으로 분비되기까지의 이동 경로로 가장 옳은 것은?",
+        options: [
+          "핵 → 골지체 → 소포체 → 리보솜 → 세포막",
+          "리보솜 → 소포체 → 골지체 → 분비소낭 → 세포막",
+          "소포체 → 리보솜 → 골지체 → 핵공 → 세포막",
+          "골지체 → 리보솜 → 미토콘드리아 → 세포막"
+        ],
+        correctIndex: 1,
+        explanation: "단백질은 리보솜에서 번역된 후 소포체(접힘) → 운반소낭 → 골지체(가공·분류) → 분비소낭을 거쳐 세포막에서 외포작용으로 배출됩니다."
+      },
+      {
+        question: "소포체에서 올바르게 접힌 단백질을 받아 최종 가공(당화 등)을 거친 후, 분비소낭에 싸서 행선지별로 배송하는 '세포 내 택배 터미널' 소기관은?",
+        options: [
+          "미토콘드리아 (Mitochondria)",
+          "중심체 (Centrosome)",
+          "골지체 (Golgi Apparatus)",
+          "인 (Nucleolus)"
+        ],
+        correctIndex: 2,
+        explanation: "골지체는 납작한 주머니(시스터나)가 겹친 구조로, 소포체로부터 받은 단백질을 최종 수식·포장하여 분비소낭을 통해 세포막이나 리소좀 등으로 분류 배송합니다."
+      },
+      {
+        question: "단백질 합성 및 세포 밖 분비 과정에 대한 설명으로 옳은 것만을 고른 것은?",
+        options: [
+          "세포 밖으로 분비되는 과정(외포작용)에는 ATP 에너지가 전혀 쓰이지 않는다.",
+          "mRNA는 핵공을 통해 핵에서 빠져나와 리보솜에 결합한다.",
+          "리보솜은 인지질 2중막으로 둘러싸여 있는 막 구조 소기관이다.",
+          "소포체와 골지체 사이의 단백질 이동은 자유 확산에 의해 이뤄진다."
+        ],
+        correctIndex: 1,
+        explanation: "핵에서 전사된 mRNA는 핵공을 통해 세포질로 나와 리보솜에 결합합니다. (리보솜은 막 구조가 없으며, 외포작용에는 ATP가 소모되고, 소포체-골지체 간 이동은 운반소낭을 통해 일어납니다.)"
+      }
+    ];
+
+    let currentQuizIndex = 0;
+    let quizScore = 0;
+    let quizTimer = null;
+    let timeLeft = 30;
+    let hasAnsweredCurrent = false;
+
+    function openGoldenBellModal() {
+      const modal = document.getElementById('golden-bell-modal');
+      const dialog = document.getElementById('quiz-dialog-box');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => {
+        dialog.classList.remove('scale-95', 'opacity-0');
+        dialog.classList.add('scale-100', 'opacity-100');
+      }, 10);
+
+      restartQuiz();
+    }
+
+    function closeGoldenBellModal() {
+      clearInterval(quizTimer);
+      const modal = document.getElementById('golden-bell-modal');
+      const dialog = document.getElementById('quiz-dialog-box');
+      dialog.classList.remove('scale-100', 'opacity-100');
+      dialog.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }, 250);
+    }
+
+    function restartQuiz() {
+      currentQuizIndex = 0;
+      quizScore = 0;
+      document.getElementById('quiz-score-display').textContent = '0점';
+      document.getElementById('quiz-main-body').classList.remove('hidden');
+      document.getElementById('quiz-completed-view').classList.add('hidden');
+      loadQuizQuestion(currentQuizIndex);
+    }
+
+    function loadQuizQuestion(index) {
+      hasAnsweredCurrent = false;
+      const q = quizQuestions[index];
+      document.getElementById('quiz-question-counter').textContent = `문제 ${index + 1} / ${quizQuestions.length}`;
+      document.getElementById('quiz-question-title').textContent = q.question;
+
+      // Reset buttons and feedback banner
+      document.getElementById('quiz-feedback-banner').classList.add('hidden');
+      document.getElementById('btn-quiz-retry').classList.add('hidden');
+      document.getElementById('btn-quiz-next').classList.add('hidden');
+
+      // Build 4 option buttons
+      const container = document.getElementById('quiz-options-container');
+      container.innerHTML = '';
+
+      q.options.forEach((optText, optIdx) => {
+        const btn = document.createElement('button');
+        btn.id = `opt-btn-${optIdx}`;
+        btn.onclick = () => selectQuizAnswer(optIdx);
+        btn.className = `p-3.5 rounded-2xl text-left font-medium text-xs md:text-sm bg-slate-900/90 border border-slate-700/80 hover:border-indigo-400 hover:bg-slate-800 transition-all flex items-start gap-3 group`;
+        btn.innerHTML = `
+          <span class="w-6 h-6 rounded-lg bg-slate-800 text-slate-300 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center font-bold text-xs shrink-0 transition">
+            ${optIdx + 1}
+          </span>
+          <span class="text-slate-200 mt-0.5 leading-snug">${optText}</span>
+        `;
+        container.appendChild(btn);
+      });
+
+      // Start 30s Countdown
+      startTimer(30);
+    }
+
+    function startTimer(seconds) {
+      clearInterval(quizTimer);
+      timeLeft = seconds;
+      updateTimerDisplay();
+
+      const totalCircle = 144.5;
+      const bar = document.getElementById('quiz-timer-bar');
+
+      quizTimer = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+
+        // Stroke dashoffset calculation
+        const offset = totalCircle * (1 - (timeLeft / 30));
+        bar.style.strokeDashoffset = offset;
+
+        // Color shifts as urgency grows
+        if (timeLeft <= 5) {
+          bar.setAttribute('stroke', '#ef4444');
+          document.getElementById('quiz-timer-text').className = "absolute font-black font-mono text-base text-red-500 animate-ping";
+          sound.playTone(600, 'square', 0.08, 0.05);
+        } else if (timeLeft <= 10) {
+          bar.setAttribute('stroke', '#f97316');
+          document.getElementById('quiz-timer-text').className = "absolute font-black font-mono text-base text-orange-400";
+        } else {
+          bar.setAttribute('stroke', '#f59e0b');
+          document.getElementById('quiz-timer-text').className = "absolute font-black font-mono text-base text-amber-400";
+        }
+
+        if (timeLeft <= 0) {
+          clearInterval(quizTimer);
+          timeOutTrigger();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      document.getElementById('quiz-timer-text').textContent = timeLeft;
+    }
+
+    function timeOutTrigger() {
+      if (hasAnsweredCurrent) return;
+      hasAnsweredCurrent = true;
+      sound.playFailure();
+
+      const banner = document.getElementById('quiz-feedback-banner');
+      const title = document.getElementById('quiz-feedback-title');
+      const detail = document.getElementById('quiz-feedback-detail');
+      const icon = document.getElementById('quiz-feedback-icon');
+
+      banner.className = "p-4 rounded-2xl mb-4 border transition-all bg-red-950/40 border-red-500/50 text-red-200";
+      icon.className = "w-8 h-8 rounded-xl flex items-center justify-center font-black bg-red-600 text-white shrink-0";
+      icon.innerHTML = `<i data-lucide="clock" class="w-5 h-5"></i>`;
+      title.textContent = "시간 초과! (30초 경과)";
+      detail.textContent = "아쉽습니다! 교실에서 손을 든 친구에게 다시 기회를 주거나 '다시 시도하기'를 눌러보세요.";
+
+      banner.classList.remove('hidden');
+      document.getElementById('btn-quiz-retry').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function selectQuizAnswer(selectedIndex) {
+      if (hasAnsweredCurrent) return;
+      clearInterval(quizTimer);
+      hasAnsweredCurrent = true;
+
+      const q = quizQuestions[currentQuizIndex];
+      const isCorrect = (selectedIndex === q.correctIndex);
+
+      const banner = document.getElementById('quiz-feedback-banner');
+      const title = document.getElementById('quiz-feedback-title');
+      const detail = document.getElementById('quiz-feedback-detail');
+      const icon = document.getElementById('quiz-feedback-icon');
+
+      const selectedBtn = document.getElementById(`opt-btn-${selectedIndex}`);
+      const correctBtn = document.getElementById(`opt-btn-${q.correctIndex}`);
+
+      if (isCorrect) {
+        // High joy celebration
+        sound.playSuccess();
+        quizScore += 100;
+        document.getElementById('quiz-score-display').textContent = `${quizScore}점`;
+
+        // Style correct button
+        selectedBtn.classList.remove('bg-slate-900/90', 'border-slate-700/80');
+        selectedBtn.classList.add('bg-emerald-950/70', 'border-emerald-400', 'ring-2', 'ring-emerald-400/50');
+
+        // Confetti explosion on screen
+        confetti({
+          particleCount: 100,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+
+        // Banner
+        banner.className = "p-4 rounded-2xl mb-4 border transition-all bg-emerald-950/50 border-emerald-500/60 text-emerald-200";
+        icon.className = "w-8 h-8 rounded-xl flex items-center justify-center font-black bg-emerald-500 text-slate-950 shrink-0";
+        icon.innerHTML = `<i data-lucide="check" class="w-5 h-5 stroke-[3]"></i>`;
+        title.innerHTML = `정답입니다! 🎉 정답 번호: [ ${q.correctIndex + 1}번 ]`;
+        detail.textContent = q.explanation;
+
+        document.getElementById('btn-quiz-next').classList.remove('hidden');
+
+      } else {
+        // Friendly failure with retry
+        sound.playFailure();
+        selectedBtn.classList.remove('bg-slate-900/90', 'border-slate-700/80');
+        selectedBtn.classList.add('bg-rose-950/60', 'border-rose-500', 'line-through', 'opacity-70');
+
+        banner.className = "p-4 rounded-2xl mb-4 border transition-all bg-amber-950/40 border-amber-500/50 text-amber-200";
+        icon.className = "w-8 h-8 rounded-xl flex items-center justify-center font-black bg-amber-500 text-slate-950 shrink-0";
+        icon.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5"></i>`;
+        title.textContent = "아쉽습니다! 오답입니다.";
+        detail.textContent = "손을 들고 다른 번호를 외쳐볼까요? '다시 시도하기' 버튼을 눌러 다시 도전하세요!";
+
+        document.getElementById('btn-quiz-retry').classList.remove('hidden');
+      }
+
+      banner.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function retryCurrentQuestion() {
+      loadQuizQuestion(currentQuizIndex);
+    }
+
+    function nextQuestion() {
+      if (currentQuizIndex < quizQuestions.length - 1) {
+        currentQuizIndex++;
+        loadQuizQuestion(currentQuizIndex);
+      } else {
+        // Quiz completed
+        clearInterval(quizTimer);
+        document.getElementById('quiz-main-body').classList.add('hidden');
+        document.getElementById('quiz-completed-view').classList.remove('hidden');
+        document.getElementById('final-score-text').textContent = `최종 획득 점수: ${quizScore}점 (${quizQuestions.length}문제 완료)`;
+
+        // Extra large celebration
+        confetti({
+          particleCount: 150,
+          spread: 100,
+          origin: { y: 0.5 }
+        });
+      }
+    }
+
+    // Set interactive visual mode
+    function setMode(mode) {
+      if (mode === 'explore') {
+        inspectOrganelle('nucleus');
+      }
+    }
+
+    // Initialization on load
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      inspectOrganelle('nucleus');
+    });
+  </script>
+</body>
+</html>
